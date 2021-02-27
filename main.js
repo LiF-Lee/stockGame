@@ -76,8 +76,7 @@ stockGame.prototype.createAccount = function(userName) {
     if(!this.timestamp) this.timestamp = timestamp;
     if(timestamp - this.timestamp >= this.gameSetting.minimum_tick_period) {
         let data = this.fs(this.dataFilePath);
-        for(let e in data.stockList) data.stockList[e].current_price = this.fluctuation(data, e);
-        //Object.keys(data.stockList).map(e => data.stockList[e].current_price = this.fluctuation(e));
+        Object.keys(data.stockList).map(e => data.stockList[e].current_price = this.fluctuation(data, e));
         this.timestamp = timestamp;
         this.fs(this.dataFilePath, data);
     }
