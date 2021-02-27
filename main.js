@@ -1,6 +1,7 @@
 const Stock = new stockGame;
 
 function response(room, msg, sender) {
+    Stock.changePrice();
     if(msg.startsWith('/주식 ')) {
         let cmd = msg.slice(4).split('#');
         switch(cmd[0]) {
@@ -14,7 +15,7 @@ function response(room, msg, sender) {
                 Stock.isUserNew(sender) ? Api.replyRoom(room, Stock.gameMessage[2]) : Api.replyRoom(room, Stock.sell(sender, cmd[1], cmd[2]));
                 break;
             case '잔고':
-                Stock.isUserNew(sender) ? Api.replyRoom(room, Stock.gameMessage[2]) : Api.replyRoom(room, Stock,myInfo(sender));
+                Stock.isUserNew(sender) ? Api.replyRoom(room, Stock.gameMessage[2]) : Api.replyRoom(room, Stock.myInfo(sender));
                 break;
             case '종목':
                 Api.replyRoom(room, Stock.stockList());
@@ -24,14 +25,13 @@ function response(room, msg, sender) {
                 break;
         }
     }
-    Stock.changePrice();
 }
 
 function stockGame() {
     this.dataFilePath = 'sdcard/stockGame/stockData.json'; // 파일 경로
     this.gameSetting = {
         newUserGift: 1000000, // 신규 유저 가입 선물 (1,000,000원)
-        default_fluctuation_limit: 2, // 주식 가격 변동 Default 값 (1틱 최대 2%)
+        default_fluctuation_limit: 1, // 주식 가격 변동 Default 값 (1틱 최대 1%)
         minimum_tick_period: 60  // 가격 변동 최소 시간 (최소 60초)
     }, this.timestamp = null;
     this.gameMessage = [
@@ -63,7 +63,7 @@ stockGame.prototype.createAccount = function(userName) {
 }, stockGame.prototype.isUserNew = function(userName) {
     return !this.fs(this.dataFilePath).userList[userName] ? true : false;
 }, stockGame.prototype.plusMinus = function() {
-    return Math.random() > .5 ? 1 : -1;
+    return Math.random() > .45 ? 1 : -1;
 }, stockGame.prototype.comma = function(int) {
     return int.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }, stockGame.prototype.percent = function(t, e) {
@@ -76,12 +76,13 @@ stockGame.prototype.createAccount = function(userName) {
     if(!this.timestamp) this.timestamp = timestamp;
     if(timestamp - this.timestamp >= this.gameSetting.minimum_tick_period) {
         let data = this.fs(this.dataFilePath);
-        Object.keys(data.stockList).map(e => data.stockList[e].current_price = this.fluctuation(e));
+        for(let e in data.stockList) data.stockList[e].current_price = this.fluctuation(data, e);
+        //Object.keys(data.stockList).map(e => data.stockList[e].current_price = this.fluctuation(e));
         this.timestamp = timestamp;
         this.fs(this.dataFilePath, data);
     }
-}, stockGame.prototype.fluctuation = function(stock) {
-    let data = this.fs(this.dataFilePath), limit = data.stockList[stock].fluctuation_limit;
+}, stockGame.prototype.fluctuation = function(data, stock) {
+    let limit = data.stockList[stock].fluctuation_limit;
     if(limit === 'Default') limit = this.gameSetting.default_fluctuation_limit;
     let price = data.stockList[stock].current_price + (Math.random() * data.stockList[stock].current_price * limit / 100 | 0) * this.plusMinus();
     return price <= 0 ? 0 : price;
@@ -89,16 +90,16 @@ stockGame.prototype.createAccount = function(userName) {
     let list = [], data = this.fs(this.dataFilePath);
     Object.keys(data.stockList).map(e => list.push(e + ' | ' + 
     this.percent(data.stockList[e].current_price, data.stockList[e].original_price) + '\n현재가: ' + 
-    this.comma(data.stockList[e].current_price)));
+    this.comma(data.stockList[e].current_price) + '₩'));
     return '[주식 종목]\n\n' + list.join('\n\n');
-}, stockGame.prototype.buy = function(userName, stockName, value) {
-    let data = this.fs(this.dataFilePath);
+}, stockGame.prototype.buy = function(userName, stockName, count) {
+    let data = this.fs(this.dataFilePath), value = Number(count);
     if(!data.stockList[stockName]) return this.gameMessage[3];
     if(data.stockList[stockName].current_price === 0) return this.gameMessage[8];
     if(this.isInt(value)) {
         let orderPrice = data.stockList[stockName].current_price * value;
         let remainBalance = data.userList[userName].balance - orderPrice;
-        if(remainBalance < 0) return this.gameMessage[5] + data.userList[userName].balance / data.stockList[stockName].current_price | 0;
+        if(remainBalance < 0) return this.gameMessage[5] + (data.userList[userName].balance / data.stockList[stockName].current_price | 0);
         if(!data.userList[userName].stock[stockName]) data.userList[userName].stock[stockName] = 0;
         data.userList[userName].balance = remainBalance;
         data.userList[userName].stock[stockName] = data.userList[userName].stock[stockName] + value;
@@ -106,8 +107,8 @@ stockGame.prototype.createAccount = function(userName) {
         return '[주문 체결]\n\n종목: ' + stockName + '\n매수 가격: ' + this.comma(data.stockList[stockName].current_price) + '₩\n수량: ' + 
         value + '\n\n종합: -' + this.comma(orderPrice) + '₩';
     } else return this.gameMessage[4];
-}, stockGame.prototype.sell = function(userName, stockName, value) {
-    let data = this.fs(this.dataFilePath);
+}, stockGame.prototype.sell = function(userName, stockName, count) {
+    let data = this.fs(this.dataFilePath), value = Number(count);
     if(!data.stockList[stockName]) return this.gameMessage[3];
     if(data.stockList[stockName].current_price === 0) return this.gameMessage[8];
     if(this.isInt(value)) {
