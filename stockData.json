@@ -1,0 +1,19 @@
+{
+    "stockList":{
+        "company A": {
+            "current_price": 8900,
+            "original_price": 8900,
+            "fluctuation_limit": "Defalt"
+        },
+        "company B": {
+            "current_price": 3400,
+            "original_price": 3400,
+            "fluctuation_limit": 40
+        },
+        "company C": {
+            "current_price": 15300,
+            "original_price": 15300,
+            "fluctuation_limit": "Defalt"
+        }
+    }, "userList": {}
+}
