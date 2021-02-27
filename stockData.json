@@ -1,5 +1,5 @@
 {
-    "stockList":{
+    "stockList": {
         "company A": {
             "current_price": 8900,
             "original_price": 8900,
