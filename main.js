@@ -84,7 +84,7 @@ stockGame.prototype.createAccount = function(userName) {
     let limit = data.stockList[stock].fluctuation_limit;
     if(limit === 'Default') limit = this.gameSetting.default_fluctuation_limit;
     let price = data.stockList[stock].current_price + (Math.random() * data.stockList[stock].current_price * limit / 100 | 0) * this.plusMinus();
-    return price <= 0 ? 0 : price;
+    return price <= 1 ? 0 : price;
 }, stockGame.prototype.stockList = function() {
     let list = [], data = this.fs(this.dataFilePath);
     Object.keys(data.stockList).map(e => list.push(e + ' | ' + 
